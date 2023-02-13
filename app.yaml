@@ -1,0 +1,66 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: data-disk-standard-ssd-btrfs-compressed
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: StandardSSD_LRS
+  fsType: btrfs
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+mountOptions:
+  - autodefrag
+  - compress
+  - ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data
+spec:
+  storageClassName: data-disk-standard-ssd-btrfs-compressed
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocfl-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocfl-test-app
+  template:
+    metadata:
+      labels:
+        app: ocfl-test-app
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: ocfl-test-app
+        image: pwinckles.azurecr.io/ocfl-azure-test:latest
+        imagePullPolicy: "Always"
+        resources:
+          limits:
+            memory: 2G
+          requests:
+            memory: 1G
+        env:
+        - name: THREAD_COUNT
+          value: "10"
+        - name: MAX_FILES_PER_THREAD
+          value: "60000"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /data
+          name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data
