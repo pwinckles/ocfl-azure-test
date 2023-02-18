@@ -1,6 +1,7 @@
 package com.example.ocfl;
 
 import edu.wisc.library.ocfl.api.MutableOcflRepository;
+import edu.wisc.library.ocfl.api.exception.ValidationException;
 import edu.wisc.library.ocfl.api.model.ObjectVersionId;
 import edu.wisc.library.ocfl.core.OcflRepositoryBuilder;
 import edu.wisc.library.ocfl.core.extension.storage.layout.config.HashedNTupleLayoutConfig;
@@ -140,6 +141,14 @@ public class Main {
             while (!stop.get()) {
                 try {
                     var objectId = "urn:example:" + prefix + "-" + nextNum;
+
+                    if (repo.containsObject(objectId)) {
+                        var result = repo.validateObject(objectId, true);
+                        if (result.hasErrors()) {
+                            throw new ValidationException("Object " + objectId + " is invalid", result);
+                        }
+                    }
+
                     var files = IntStream.range(0, fileCount)
                             .mapToObj(i -> RandomStringUtils.randomAscii(fileSize))
                             .collect(Collectors.toList());

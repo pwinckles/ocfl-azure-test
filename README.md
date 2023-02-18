@@ -21,4 +21,6 @@ kubectl delete -f app.yaml
 kubectl get pods
 kubectl logs POD -f
 kubectl exec POD -it -- /bin/bash
+
+./rocfl -r ocfl-root validate -l warn > rocfl.log 2>&1 &
 ```
